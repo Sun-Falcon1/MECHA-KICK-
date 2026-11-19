@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#10172c">
+<title>MECHA KICK — Robo Soccer</title>
+<style>
+  :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; overflow: hidden; color: #f5f7ff; background: radial-gradient(ellipse at 50% 0%, #233354 0, #111a30 45%, #0b1020 100%); }
+  .game-shell { width: min(1120px, 96vw); }
+  .topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 8px 14px; }
+  .brand { display: flex; align-items: center; gap: 11px; }
+  .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; color: #111827; font-size: 21px; border-radius: 12px; background: linear-gradient(145deg, #fcff7c, #ff9a63); box-shadow: 0 5px 22px #ffbd5b55; }
+  .brand-name { font-size: 13px; font-weight: 900; letter-spacing: .16em; }
+  .brand-sub { margin-top: 2px; color: #97a5c5; font-size: 10px; font-weight: 700; letter-spacing: .2em; }
+  .scoreboard { display: flex; align-items: center; gap: 17px; padding: 8px 20px; border: 1px solid #ffffff1b; border-radius: 15px; background: #10182dbd; box-shadow: 0 10px 26px #0003; }
+  .team-score { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; letter-spacing: .08em; }
+  .team-dot { width: 8px; height: 8px; border-radius: 50%; background: #61eaff; box-shadow: 0 0 12px #61eaff; }
+  .team-dot.orange { background: #ff9d59; box-shadow: 0 0 12px #ff9d59; }
+  .score { min-width: 22px; text-align: center; color: #fff; font-size: 21px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .score-divider { color: #66718e; font-size: 12px; }
+  .sound-button { padding: 9px 12px; border: 1px solid #ffffff1b; border-radius: 10px; color: #bbc7e0; background: #121b30; cursor: pointer; font-size: 11px; font-weight: 800; letter-spacing: .08em; }
+  .sound-button:hover { border-color: #6ae7ff80; color: #fff; }
+  .arena { position: relative; overflow: hidden; aspect-ratio: 16 / 9; min-height: 300px; border: 1px solid #ffffff24; border-radius: 22px; background: #121b29; box-shadow: 0 28px 80px #0008, 0 0 55px #4bdcff12; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hud { position: absolute; inset: 14px 16px auto; display: flex; justify-content: space-between; pointer-events: none; }
+  .hud-chip { padding: 7px 10px; border: 1px solid #ffffff20; border-radius: 9px; color: #d3ddf2; background: #10182dbd; font-size: 10px; font-weight: 800; letter-spacing: .12em; backdrop-filter: blur(7px); }
+  .hud-chip span { color: #72edff; }
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 20px; background: linear-gradient(180deg, #07101a22, #07101a9c); transition: opacity .25s ease, visibility .25s ease; }
+  .overlay.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+  .card { width: min(390px, 94%); padding: 28px 28px 24px; text-align: center; border: 1px solid #ffffff2a; border-radius: 21px; background: linear-gradient(145deg, #192541ee, #10182cef); box-shadow: 0 24px 70px #0008; }
+  .eyebrow { color: #70ebff; font-size: 10px; font-weight: 900; letter-spacing: .27em; }
+  h1 { margin: 7px 0 8px; font-size: clamp(29px, 5vw, 43px); line-height: 1; letter-spacing: -.055em; }
+  .intro { max-width: 290px; margin: 0 auto 19px; color: #a9b5cf; font-size: 13px; line-height: 1.6; }
+  .start-button { padding: 13px 22px; border: 0; border-radius: 11px; color: #102033; background: linear-gradient(135deg, #9dfcfe, #76f1c0); box-shadow: 0 7px 22px #67e9d54d; cursor: pointer; font: inherit; font-size: 12px; font-weight: 950; letter-spacing: .12em; transition: transform .15s, box-shadow .15s; }
+  .start-button:hover { transform: translateY(-2px); box-shadow: 0 10px 28px #67e9d577; }
+  .controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 9px 15px; margin-top: 18px; color: #91a0bf; font-size: 10px; }
+  kbd { padding: 3px 6px; border: 1px solid #ffffff2a; border-radius: 5px; color: #e4ecff; background: #ffffff0b; font: 800 9px ui-sans-serif, system-ui; }
+  .bottomline { display: flex; justify-content: space-between; gap: 12px; padding: 12px 8px 0; color: #7583a1; font-size: 10px; font-weight: 700; letter-spacing: .06em; }
+  .bottomline b { color: #b7c6e4; }
+  @media (max-width: 600px) {
+    .topbar { padding-bottom: 10px; }
+    .brand-sub { display: none; }
+    .scoreboard { gap: 9px; padding: 7px 10px; }
+    .team-score { gap: 5px; font-size: 9px; }
+    .score { font-size: 17px; }
+    .sound-button { padding: 8px; }
+    .arena { border-radius: 15px; min-height: 260px; }
+    .bottomline { font-size: 9px; }
+  }
+</style>
+</head>
+<body>
+<main class="game-shell">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">⚡</div>
+      <div><div class="brand-name">MECHA KICK</div><div class="brand-sub">ROBO SOCCER LEAGUE</div></div>
+    </div>
+    <div class="scoreboard" aria-label="Score">
+      <div class="team-score"><i class="team-dot"></i><span>YOU</span><strong class="score" id="playerScore">0</strong></div>
+      <span class="score-divider">—</span>
+      <div class="team-score"><strong class="score" id="rivalScore">0</strong><span>RIVAL</span><i class="team-dot orange"></i></div>
+    </div>
+    <button class="sound-button" id="soundButton" type="button" aria-label="Toggle sound">♫ SOUND ON</button>
+  </header>
+  <section class="arena" aria-label="Robo soccer game">
+    <canvas id="game" aria-label="Game field. Use WASD or arrow keys to move, space to boost."></canvas>
+    <div class="hud"><div class="hud-chip">MATCH <span>01</span> · FIRST TO 5</div><div class="hud-chip" id="statusChip">READY</div></div>
+    <div class="overlay" id="overlay">
+      <div class="card">
+        <div class="eyebrow">WELCOME TO THE ARENA</div>
+        <h1 id="cardTitle">KICK SOME<br>METAL.</h1>
+        <p class="intro" id="cardIntro">Rocket-powered robots. One shiny ball. Bump your rival and score before they do.</p>
+        <button class="start-button" id="startButton" type="button">START MATCH&nbsp; →</button>
+        <div class="controls"><span><kbd>WASD</kbd> MOVE</span><span><kbd>SPACE</kbd> BOOST</span><span><kbd>R</kbd> RESTART</span></div>
+      </div>
+    </div>
+  </section>
+  <footer class="bottomline"><span>▲ <b>CRASH. CHARGE. SCORE.</b></span><span>NO REFEREES. JUST ROBOTS.</span></footer>
+</main>
+<script>
+(() => {
+  "use strict";
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const arena = document.querySelector(".arena");
+  const overlay = document.getElementById("overlay");
+  const startButton = document.getElementById("startButton");
+  const cardTitle = document.getElementById("cardTitle");
+  const cardIntro = document.getElementById("cardIntro");
+  const statusChip = document.getElementById("statusChip");
+  const playerScoreEl = document.getElementById("playerScore");
+  const rivalScoreEl = document.getElementById("rivalScore");
+  const soundButton = document.getElementById("soundButton");
+  const keys = new Set();
+  const field = { left: 86, right: 914, top: 80, bottom: 620, goalWidth: 250 };
+  const player = { x: 365, y: 490, vx: 0, vy: 0, angle: -Math.PI / 2, color: "#46e5f5", trim: "#d8ff75", name: "YOU", radius: 32, boost: 1, cool: 0, isPlayer: true };
+  const rival = { x: 635, y: 205, vx: 0, vy: 0, angle: Math.PI / 2, color: "#ff785e", trim: "#ffd166", name: "CPU", radius: 32, boost: 1, cool: 0, isPlayer: false };
+  const ball = { x: 500, y: 350, vx: 0, vy: 0, radius: 16, spin: 0 };
+  let width = 900, height = 506, dpr = 1, running = false, soundOn = true, scoreYou = 0, scoreRival = 0;
+  let lastTime = 0, goalFlash = 0, particles = [], audioContext = null;
+  const clamp = (n, min, max) => Math.max(min, Math.min(max, n));
+  const random = (min, max) => min + Math.random() * (max - min);
+
+  function resize() {
+    const rect = arena.getBoundingClientRect();
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    width = Math.max(1, rect.width); height = Math.max(1, rect.height);
+    canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+    ctx.setTransform(dpr * width / 1000, 0, 0, dpr * height / 700, 0, 0);
+    draw();
+  }
+  window.addEventListener("resize", resize);
+  function beep(freq = 440, duration = .09, type = "sine", volume = .035) {
+    if (!soundOn) return;
+    try {
+      audioContext ||= new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioContext.createOscillator(), gain = audioContext.createGain();
+      oscillator.type = type; oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+      gain.gain.setValueAtTime(volume, audioContext.currentTime);
+      gain.gain.exponentialRampToValueAtTime(.001, audioContext.currentTime + duration);
+      oscillator.connect(gain); gain.connect(audioContext.destination);
+      oscillator.start(); oscillator.stop(audioContext.currentTime + duration);
+    } catch (error) { console.warn("Audio is unavailable in this browser.", error); }
+  }
+  function resetPositions() {
+    Object.assign(player, { x: 365, y: 490, vx: 0, vy: 0, angle: -Math.PI / 2, boost: 1, cool: 0 });
+    Object.assign(rival, { x: 635, y: 205, vx: 0, vy: 0, angle: Math.PI / 2, boost: 1, cool: 0 });
+    Object.assign(ball, { x: 500, y: 350, vx: 0, vy: 0, spin: 0 });
+    particles = [];
+  }
+  function startMatch() {
+    if (scoreYou >= 5 || scoreRival >= 5) { scoreYou = 0; scoreRival = 0; playerScoreEl.textContent = "0"; rivalScoreEl.textContent = "0"; }
+    resetPositions(); running = true; overlay.classList.add("hidden"); statusChip.textContent = "GO!"; lastTime = performance.now(); beep(660, .12);
+  }
+  startButton.addEventListener("click", startMatch);
+  soundButton.addEventListener("click", () => { soundOn = !soundOn; soundButton.textContent = soundOn ? "♫ SOUND ON" : "♫ SOUND OFF"; if (soundOn) beep(540, .08); });
+  window.addEventListener("keydown", event => {
+    const key = event.key.toLowerCase();
+    if (["arrowup", "arrowdown", "arrowleft", "arrowright", " "].includes(key)) event.preventDefault();
+    keys.add(key);
+    if (key === "r" && !event.repeat) { scoreYou = 0; scoreRival = 0; playerScoreEl.textContent = "0"; rivalScoreEl.textContent = "0"; startMatch(); }
+    if (key === "enter" && !running) startMatch();
+  });
+  window.addEventListener("keyup", event => keys.delete(event.key.toLowerCase()));
+  window.addEventListener("blur", () => keys.clear());
+  function showIntro(won = false) {
+    cardTitle.innerHTML = won ? "CHAMPIONS<br>OF THE PITCH." : "GAME<br>OVER.";
+    cardIntro.textContent = won ? "The rival has been turned into spare parts. Fancy another round?" : "The rival bot took the match. Charge up and give it another go!";
+    startButton.textContent = "PLAY AGAIN  →";
+    overlay.classList.remove("hidden");
+  }
+  function getInput() {
+    let x = 0, y = 0;
+    if (keys.has("a") || keys.has("arrowleft")) x--;
+    if (keys.has("d") || keys.has("arrowright")) x++;
+    if (keys.has("w") || keys.has("arrowup")) y--;
+    if (keys.has("s") || keys.has("arrowdown")) y++;
+    const length = Math.hypot(x, y) || 1;
+    return { x: x / length, y: y / length, boost: keys.has(" ") };
+  }
+  function steer(bot, dx, dy, boosting, dt) {
+    const length = Math.hypot(dx, dy);
+    if (length > .01) {
+      dx /= length; dy /= length;
+      bot.angle = Math.atan2(dy, dx);
+      const canBoost = boosting && bot.boost > .025;
+      const acceleration = canBoost ? 780 : 480;
+      bot.vx += dx * acceleration * dt; bot.vy += dy * acceleration * dt;
+      if (canBoost) {
+        bot.boost = Math.max(0, bot.boost - dt * .58);
+        bot.cool = .08;
+        if (Math.random() < .7) particles.push({ x: bot.x - Math.cos(bot.angle) * 29, y: bot.y - Math.sin(bot.angle) * 29, vx: -Math.cos(bot.angle) * random(70, 180) + random(-50, 50), vy: -Math.sin(bot.angle) * random(70, 180) + random(-50, 50), life: random(.18, .38), max: .38, color: Math.random() > .5 ? "#a6ff79" : "#ffd46a" });
+      } else bot.boost = Math.min(1, bot.boost + dt * .2);
+    } else bot.boost = Math.min(1, bot.boost + dt * .24);
+    const maxSpeed = bot.cool > 0 ? 390 : 280;
+    const speed = Math.hypot(bot.vx, bot.vy);
+    if (speed > maxSpeed) { bot.vx = bot.vx / speed * maxSpeed; bot.vy = bot.vy / speed * maxSpeed; }
+    const drag = Math.pow(.986, dt * 60);
+    bot.vx *= drag; bot.vy *= drag;
+    bot.x += bot.vx * dt; bot.y += bot.vy * dt;
+    bot.cool = Math.max(0, bot.cool - dt);
+    bot.x = clamp(bot.x, field.left + bot.radius, field.right - bot.radius);
+    bot.y = clamp(bot.y, field.top + bot.radius, field.bottom - bot.radius);
+  }
+  function collideRobot(bot) {
+    let dx = ball.x - bot.x, dy = ball.y - bot.y, dist = Math.hypot(dx, dy);
+    const minDist = bot.radius + ball.radius;
+    if (dist >= minDist) return;
+    if (dist < .001) { dx = 1; dy = 0; dist = 1; }
+    const nx = dx / dist, ny = dy / dist, overlap = minDist - dist;
+    ball.x += nx * overlap; ball.y += ny * overlap;
+    const speed = Math.hypot(bot.vx, bot.vy);
+    const hit = Math.max(110, speed * 1.18 + 85);
+    ball.vx += nx * hit + bot.vx * .38; ball.vy += ny * hit + bot.vy * .38;
+    bot.vx -= nx * 28; bot.vy -= ny * 28;
+    beep(speed > 190 ? 170 : 260, .045, "triangle", .025);
+    for (let i = 0; i < 5; i++) particles.push({ x: ball.x, y: ball.y, vx: nx * random(35, 180) + random(-70, 70), vy: ny * random(35, 180) + random(-70, 70), life: random(.15, .32), max: .32, color: bot.trim });
+  }
+  function separateBots() {
+    const dx = rival.x - player.x, dy = rival.y - player.y, dist = Math.hypot(dx, dy), min = player.radius + rival.radius - 3;
+    if (dist >= min) return;
+    const nx = dx / (dist || 1), ny = dy / (dist || 1), overlap = (min - dist) / 2;
+    player.x -= nx * overlap; player.y -= ny * overlap; rival.x += nx * overlap; rival.y += ny * overlap;
+    player.vx -= nx * 55; player.vy -= ny * 55; rival.vx += nx * 55; rival.vy += ny * 55;
+    beep(125, .07, "square", .018);
+    for (let i = 0; i < 8; i++) particles.push({ x: (player.x + rival.x) / 2, y: (player.y + rival.y) / 2, vx: random(-140, 140), vy: random(-140, 140), life: random(.16, .32), max: .32, color: i % 2 ? "#71f1ff" : "#ffc15b" });
+  }
+  function moveBall(dt) {
+    ball.x += ball.vx * dt; ball.y += ball.vy * dt;
+    const friction = Math.pow(.989, dt * 60);
+    ball.vx *= friction; ball.vy *= friction; ball.spin += Math.hypot(ball.vx, ball.vy) * dt * .006;
+    const leftGoal = 500 - field.goalWidth / 2, rightGoal = 500 + field.goalWidth / 2;
+    const inGoal = ball.x > leftGoal && ball.x < rightGoal;
+    if (ball.x - ball.radius < field.left || ball.x + ball.radius > field.right) {
+      ball.x = clamp(ball.x, field.left + ball.radius, field.right - ball.radius);
+      ball.vx *= -.75; beep(210, .035, "sine", .018);
+    }
+    if (ball.y - ball.radius < field.top) {
+      if (inGoal) { if (ball.y < field.top - 24) scoreGoal(true); }
+      else if (ball.y < field.top + ball.radius) { ball.y = field.top + ball.radius; ball.vy = Math.abs(ball.vy) * .75; }
+    }
+    if (ball.y + ball.radius > field.bottom) {
+      if (inGoal) { if (ball.y > field.bottom + 24) scoreGoal(false); }
+      else if (ball.y > field.bottom - ball.radius) { ball.y = field.bottom - ball.radius; ball.vy = -Math.abs(ball.vy) * .75; }
+    }
+  }
+  function scoreGoal(playerScored) {
+    if (playerScored) { scoreYou++; playerScoreEl.textContent = String(scoreYou); }
+    else { scoreRival++; rivalScoreEl.textContent = String(scoreRival); }
+    goalFlash = 1; beep(playerScored ? 880 : 330, .32, "sawtooth", .05);
+    statusChip.textContent = playerScored ? "GOAL!" : "RIVAL SCORES";
+    if (scoreYou >= 5 || scoreRival >= 5) {
+      running = false;
+      setTimeout(() => { showIntro(scoreYou >= 5); }, 850);
+    } else setTimeout(() => { resetPositions(); statusChip.textContent = "KICK OFF"; }, 600);
+  }
+  function update(dt) {
+    const input = getInput();
+    steer(player, input.x, input.y, input.boost, dt);
+    const targetX = ball.x + (ball.x < rival.x ? 28 : -28);
+    const targetY = ball.y + (ball.y < rival.y ? 28 : -28);
+    let rx = targetX - rival.x, ry = targetY - rival.y, rlen = Math.hypot(rx, ry) || 1;
+    rx /= rlen; ry /= rlen;
+    const rivalBoost = rlen > 140 && Math.random() < .014;
+    steer(rival, rx, ry, rivalBoost, dt);
+    separateBots(); collideRobot(player); collideRobot(rival); moveBall(dt);
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i]; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= .96; p.vy *= .96; p.life -= dt;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+    goalFlash = Math.max(0, goalFlash - dt * 1.7);
+  }
+  function polygon(points, fill, stroke = null, lineWidth = 1) {
+    ctx.beginPath(); points.forEach((point, index) => index ? ctx.lineTo(point[0], point[1]) : ctx.moveTo(point[0], point[1]));
+    ctx.closePath(); ctx.fillStyle = fill; ctx.fill(); if (stroke) { ctx.lineWidth = lineWidth; ctx.strokeStyle = stroke; ctx.stroke(); }
+  }
+  function drawField() {
+    const bg = ctx.createLinearGradient(0, 0, 1000, 700); bg.addColorStop(0, "#152b35"); bg.addColorStop(1, "#0c202a");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, 1000, 700);
+    for (let i = 0; i < 12; i++) {
+      ctx.fillStyle = i % 2 ? "#163e42" : "#19464a";
+      ctx.fillRect(0, field.top + i * (field.bottom - field.top) / 12, 1000, (field.bottom - field.top) / 12 + 1);
+    }
+    const lg = field.goalWidth;
+    polygon([[500 - lg/2, field.top], [500 + lg/2, field.top], [500 + lg/2 + 23, 18], [500 - lg/2 - 23, 18]], "#1b3946", "#73e7ff88", 2);
+    polygon([[500 - lg/2, field.bottom], [500 + lg/2, field.bottom], [500 + lg/2 + 23, 682], [500 - lg/2 - 23, 682]], "#1b3946", "#ffae6e88", 2);
+    ctx.save(); ctx.strokeStyle = "#d5fff29c"; ctx.lineWidth = 2;
+    ctx.strokeRect(field.left, field.top, field.right - field.left, field.bottom - field.top);
+    ctx.beginPath(); ctx.moveTo(field.left, 350); ctx.lineTo(field.right, 350); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(500, 350, 93, 52, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(500, 350, 4, 0, Math.PI * 2); ctx.fillStyle = "#eaffd8"; ctx.fill();
+    ctx.strokeRect(351, field.top, 298, 112); ctx.strokeRect(408, field.top, 184, 48);
+    ctx.strokeRect(351, field.bottom - 112, 298, 112); ctx.strokeRect(408, field.bottom - 48, 184, 48);
+    ctx.strokeStyle = "#9effcf9b"; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.moveTo(500 - lg/2, field.top); ctx.lineTo(500 + lg/2, field.top); ctx.stroke();
+    ctx.strokeStyle = "#ffb477"; ctx.beginPath(); ctx.moveTo(500 - lg/2, field.bottom); ctx.lineTo(500 + lg/2, field.bottom); ctx.stroke();
+    ctx.restore();
+    for (let i = 0; i < 4; i++) {
+      const x = 80 + i * 280;
+      const glow = ctx.createRadialGradient(x, 65, 2, x, 65, 70);
+      glow.addColorStop(0, "#a9f6ff40"); glow.addColorStop(1, "#a9f6ff00");
+      ctx.fillStyle = glow; ctx.fillRect(x - 70, 0, 140, 130);
+    }
+    if (goalFlash > 0) { ctx.fillStyle = `rgba(150,255,215,${goalFlash * .12})`; ctx.fillRect(0, 0, 1000, 700); }
+  }
+  function drawRobot(bot) {
+    const x = bot.x, y = bot.y, r = bot.radius;
+    ctx.save(); ctx.translate(x, y);
+    ctx.fillStyle = "#06141888"; ctx.beginPath(); ctx.ellipse(4, 14, r * 1.15, r * .8, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.rotate(bot.angle);
+    const shell = ctx.createLinearGradient(-r, -r, r, r); shell.addColorStop(0, bot.color); shell.addColorStop(.52, bot.color); shell.addColorStop(1, "#273751");
+    ctx.fillStyle = "#202a3a"; ctx.fillRect(-r * .7, -r * .92, r * 1.4, r * 1.84);
+    ctx.fillStyle = "#101b2a"; ctx.beginPath(); ctx.ellipse(-r * .55, -r * .72, 10, 7, 0, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.ellipse(-r * .55, r * .72, 10, 7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-r * .87, -r * .3); ctx.lineTo(-r * .87, r * .3); ctx.lineTo(-r * .32, r * .63); ctx.lineTo(r * .67, r * .58); ctx.lineTo(r * .98, r * .27); ctx.lineTo(r * .98, -r * .27); ctx.lineTo(r * .67, -r * .58); ctx.lineTo(-r * .32, -r * .63); ctx.closePath();
+    ctx.fillStyle = shell; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = "#ffffff65"; ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-r * .18, -r * .52); ctx.lineTo(r * .55, -r * .42); ctx.lineTo(r * .81, 0); ctx.lineTo(r * .55, r * .42); ctx.lineTo(-r * .18, r * .52); ctx.quadraticCurveTo(-r * .5, 0, -r * .18, -r * .52);
+    ctx.fillStyle = "#13253a"; ctx.fill(); ctx.strokeStyle = bot.trim; ctx.lineWidth = 2; ctx.stroke();
+    const eye = ctx.createLinearGradient(0, -8, 0, 8); eye.addColorStop(0, "#ffffff"); eye.addColorStop(.3, bot.trim); eye.addColorStop(1, bot.color);
+    ctx.shadowColor = bot.trim; ctx.shadowBlur = 12; ctx.fillStyle = eye; ctx.beginPath(); ctx.roundRect(r * .12, -5, r * .48, 10, 5); ctx.fill(); ctx.shadowBlur = 0;
+    ctx.fillStyle = bot.trim; ctx.beginPath(); ctx.moveTo(r * .75, 0); ctx.lineTo(r * .48, -7); ctx.lineTo(r * .48, 7); ctx.fill();
+    ctx.strokeStyle = bot.trim + "aa"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-r * .18, -r * .48); ctx.lineTo(-r * .3, -r * .85); ctx.stroke();
+    ctx.fillStyle = bot.trim; ctx.beginPath(); ctx.arc(-r * .3, -r * .87, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle = "#f4fbff"; ctx.font = "800 11px ui-sans-serif, system-ui"; ctx.textAlign = "center"; ctx.fillText(bot.name, x, y + r + 23);
+    if (bot.isPlayer) {
+      ctx.fillStyle = "#08172399"; ctx.beginPath(); ctx.roundRect(x - 30, y + r + 30, 60, 5, 3); ctx.fill();
+      const boost = ctx.createLinearGradient(x - 30, 0, x + 30, 0); boost.addColorStop(0, "#64f0ff"); boost.addColorStop(1, "#bdff82");
+      ctx.fillStyle = boost; ctx.beginPath(); ctx.roundRect(x - 30, y + r + 30, 60 * bot.boost, 5, 3); ctx.fill();
+    }
+  }
+  function drawBall() {
+    ctx.save(); ctx.translate(ball.x, ball.y);
+    ctx.fillStyle = "#06121b99"; ctx.beginPath(); ctx.ellipse(3, 10, ball.radius * 1.1, ball.radius * .7, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.translate(0, -3); ctx.rotate(ball.spin);
+    const shine = ctx.createRadialGradient(-6, -7, 2, 0, 0, ball.radius * 1.25);
+    shine.addColorStop(0, "#ffffff"); shine.addColorStop(.5, "#e5f1f3"); shine.addColorStop(1, "#8298a7");
+    ctx.fillStyle = shine; ctx.beginPath(); ctx.arc(0, 0, ball.radius, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "#5b7182"; ctx.lineWidth = 1.3;
+    for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(0, 0, ball.radius * (.27 + i * .12), i * 1.1, i * 1.1 + 1.6); ctx.stroke(); }
+    ctx.fillStyle = "#1e3542"; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  function draw() {
+    ctx.setTransform(dpr * width / 1000, 0, 0, dpr * height / 700, 0, 0);
+    ctx.clearRect(0, 0, 1000, 700);
+    drawField();
+    for (const p of particles) { ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 2 + 3 * p.life / p.max, 0, Math.PI * 2); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    drawBall();
+    if (player.y < rival.y) { drawRobot(player); drawRobot(rival); } else { drawRobot(rival); drawRobot(player); }
+  }
+  function frame(time) {
+    const dt = Math.min((time - lastTime) / 1000 || 0, .035); lastTime = time;
+    if (running) update(dt);
+    draw(); requestAnimationFrame(frame);
+  }
+  resize(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
